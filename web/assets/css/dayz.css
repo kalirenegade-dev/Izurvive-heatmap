@@ -1,0 +1,75 @@
+/* Style the header */
+header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background-color: #222222; /* Background color for the header */
+    z-index: 1; /* Ensure the header is above the map */
+    padding: 10px; /* Adjust padding as needed */
+}
+
+/* Set the map container to fill the remaining viewport */
+#map {
+    position: absolute;
+    top: 130px; /* Adjust this value to match the header height */
+    left: 0;
+    width: 100%;
+    height: calc(100% - 130px); /* Adjust for header height */
+    margin: 0;
+    padding: 0;
+}
+
+/* Remove any margin or padding on the body and HTML elements */
+body, html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    overflow: hidden;
+	background-color: #225222;
+}
+
+/* Optionally, set the map's z-index if needed */
+#map {
+    z-index: 0; /* You can adjust this value as needed */
+}
+
+	.leaflet-container {
+		background: #222222;
+		outline: 0;
+	}
+
+	.leaflet-control-layers {
+		position: absolute;
+		bottom: 10px;
+		left: 10px;
+		/* changed from right to left */
+		z-index: 1000;
+		background-color: white;
+		padding: 10px;
+		border-radius: 4px;
+		border: 1px solid #ccc;
+	}
+
+	.leaflet-control-image {
+		background-image: url("../img/switchmap-edd97354.png");
+		background-size: contain;
+		background-repeat: no-repeat;
+		width: 90px;
+		height: 90px;
+		cursor: pointer;
+		/* Added classes */
+		position: absolute;
+		bottom: 4px;
+		left: 4px;
+		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+		border: 2px solid #fff;
+		border-radius: 50%;
+		overflow: hidden;
+		transition: all 0.3s ease;
+	}
+
+	.leaflet-control-image:hover {
+		border-color: #ccc;
+		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
+	}
