@@ -8,38 +8,36 @@ import numpy as np
 import base64
 from datetime import datetime, timezone, timedelta
 import sqlite3
-import os
-from dotenv import load_dotenv
+import shutil
 
-# Load environment variables from .env file
-load_dotenv()
+
+
+
+
 
 maxPages = 2000
 
-ExitIfInDB = True
+PVP_Limit = False;
+PVE_Limit = False;
 
-ExitIfInDBPVP = False
-ExitIfInDBPVE = False
-
-PVP_lastID = None
-PVE_lastID = None
+PVP_lastID = ''
+PVE_lastID = ''
 
 
-# Access the environment variables
-__dcfduid = os.getenv('__dcfduid')
-__sdcfduid = os.getenv('__sdcfduid')
-__cfruid = os.getenv('__cfruid')
-_cfuvid = os.getenv('_cf_uvid')
-_gcl_au = os.getenv('_gcl_au')
-_ga = os.getenv('_ga')
-cf_clearance = os.getenv('cf_clearance')
-OptanonConsent = os.getenv('OptanonConsent')
-_ga_Q149DFWHT7 = os.getenv('_ga_Q149DFWHT7')
-authorization = os.getenv('authorization')
-GUILD_ID = os.getenv('GUILD_ID')
-PVP_CHANNAL_ID = os.getenv('PVP_CHANNAL_ID')
-PVE_CHANNAL_ID = os.getenv('PVE_CHANNAL_ID')
-x_super_properties = os.getenv('x_super_properties')
+__dcfduid = '7ec36000456911ee87e45b1926d34a4b'
+__sdcfduid = '7ec36001456911ee87e45b1926d34a4b2bf2b08262866669206608e90442be9986b9720c414ddb87005a5d06e4d181a0'
+__cfruid = 'f1b04ecb0a48f10edde11ceaaae6baf956f5abd9-1693202989'
+_cfuvid = 'waJpwkI4FwbuXbshi0iebzAyydSRL8tSTY5z0NHINU0-1693202989571-0-604800000'
+_gcl_au = '1.1.560581289.1693202990'
+_ga = 'GA1.1.1122319778.1693202990'
+cf_clearance = '32GMDgULDGXNhYZwwg3xoMd6QHfj8hjGjX6N_cPlJO0-1693204840-0-1-1a190579.32cd1f96.13fa169c-0.2.1693204840'
+OptanonConsent ='isIABGlobal=false&datestamp=Mon+Aug+28+2023+02%3A40%3A40+GMT-0400+(Eastern+Daylight+Time)&version=6.33.0&hosts=&landingPath=https%3A%2F%2Fdiscord.com%2F&groups=C0001%3A1%2CC0002%3A1%2CC0003%3A1'
+_ga_Q149DFWHT7 = 'GS1.1.1693202990.1.1.1693204840.0.0.0'
+authorization = 'MTA3ODM2MTg2ODgwNjEyNzczOA.G7hM8b.bdfYTmcOjnEVVDyfuFKEniI6avqvAOJoL9wANc'
+GUILD_ID = '937334065575657473'
+PVP_CHANNAL_ID = '1138075837845999696'
+PVE_CHANNAL_ID = '1138075843931938836'
+x_super_properties = 'eyJvcyI6IldpbmRvd3MiLCJicm93c2VyIjoiQ2hyb21lIiwiZGV2aWNlIjoiIiwic3lzdGVtX2xvY2FsZSI6ImVuLVVTIiwiYnJvd3Nlcl91c2VyX2FnZW50IjoiTW96aWxsYS81LjAgKFdpbmRvd3MgTlQgMTAuMDsgV2luNjQ7IHg2NCkgQXBwbGVXZWJLaXQvNTM3LjM2IChLSFRNTCwgbGlrZSBHZWNrbykgQ2hyb21lLzExNi4wLjAuMCBTYWZhcmkvNTM3LjM2IiwiYnJvd3Nlcl92ZXJzaW9uIjoiMTE2LjAuMC4wIiwib3NfdmVyc2lvbiI6IjEwIiwicmVmZXJyZXIiOiIiLCJyZWZlcnJpbmdfZG9tYWluIjoiIiwicmVmZXJyZXJfY3VycmVudCI6IiIsInJlZmVycmluZ19kb21haW5fY3VycmVudCI6IiIsInJlbGVhc2VfY2hhbm5lbCI6InN0YWJsZSIsImNsaWVudF9idWlsZF9udW1iZXIiOjIyMjk2MywiY2xpZW50X2V2ZW50X3NvdXJjZSI6bnVsbH0='
 
 PVP_params = {'limit': '50'}
 PVP_cookies = {
@@ -111,17 +109,25 @@ PVE_headers = {
 }
 
 
+def CopyDB():
+    source_file = 'PVP_PVE.db'
+    destination_folder = '\\\\BLUESRV\\appdata\\nginx\\www\\dayz'
+    try:
+        shutil.copy2(source_file, destination_folder)
+        print(f"File '{source_file}' copyed successfully to '{destination_folder}'.")
+    except Exception as e:
+        print(f"Error moving the file: {e}")
+
+
 def is_Record_in_db(cursor, Victim, timestamp, InGameTime, Link, table_name):
     # Execute a SQL query to check if a record with the same combination of fields exists in the specified table
     cursor.execute(f"SELECT COUNT(*) FROM {table_name} WHERE Victim = ? AND Timestamp = ? AND InGameTime = ? AND Link = ?", (Victim, timestamp, InGameTime, Link))
     count = cursor.fetchone()[0]  # Get the count of records with the given combination of fields
     return count > 0
 
-    
 
 def processPVPDesc(description,title,timestamp,fields):
-    global ExitIfInDBPVP
-    global ExitIfInDB
+    global PVP_Limit
     data = []
     #print(description)
     Killer = ''
@@ -280,10 +286,8 @@ def processPVPDesc(description,title,timestamp,fields):
             # Commit changes and close the connection
             conn.commit()
         else:
+            PVP_Limit = True;
             print(f"Record with Timestamp {timestamp} already exists in the PVP table.")        
-            if ExitIfInDB:
-                ExitIfInDBPVP = True
-
 
     elif (Killer != "" and Victim != "" and Weapon != "" and WeaponType != "" and Distance != "" and HitLocation != "" and HitDamage != "" and POS_X != "" and POS_Y != "" and POS_Z != "" and Link != ""):
         print(f"Killer: {Killer}, Victim: {Victim}, coords: {POS_X}/{POS_Y}")
@@ -332,15 +336,11 @@ def processPVPDesc(description,title,timestamp,fields):
             # Commit changes and close the connection
             conn.commit()
         else:
-            print(f"Record with Timestamp {timestamp} already exists in the PVP table.")   
-            if ExitIfInDB:
-                ExitIfInDBPVP = True
-            
+            PVP_Limit = True;
+            print(f"Record with Timestamp {timestamp} already exists in the PVP table.")        
 
 def processPVEDesc(description,title,timestamp):
-    global ExitIfInDBPVE
-    global ExitIfInDB
-
+    global PVE_Limit
     latitude_longitude= ''
     Victim = ''
     data = []
@@ -423,78 +423,65 @@ def processPVEDesc(description,title,timestamp):
                 # Commit changes and close the connection
                 conn.commit()
             else:
+                PVE_Limit = True;
                 print(f"Record with Timestamp {timestamp} already exists in the PVE table.")
-                if ExitIfInDB:
-                    ExitIfInDBPVE = True
             
 
            
 
 def processPVP(response):
     global PVP_lastID
+    global PVP_Limit
+    
     parsed_json = json.loads(response.content)
     title = ''
     timestamp = ''
     fields = ''
     for json_obj in parsed_json:
-        CurrentID = json_obj['id']
-        if CurrentID is None:
-            print("invalid ID None")
-        if CurrentID == '':
-            print("invalid ID ''")
-            print(parsed_json)
-        if PVP_lastID == CurrentID:
+        currentID = json_obj['id']
+        
+        if PVP_lastID == currentID:
             pass
         else:
-            PVP_lastID = CurrentID
+            PVP_lastID = currentID
             if "embeds" in json_obj:
                 for embed in json_obj["embeds"]:
-                    if "title" in embed:
-                        title = embed["title"]
-                    if "timestamp" in embed:
-                        timestamp = embed["timestamp"]
-                        
-                    if "fields" in embed:
-                        fields = embed["fields"]
-                    if "description" in embed:
-                        description = embed["description"]
-                        if ExitIfInDB:
-                            if ExitIfInDBPVP:
-                                return CurrentID  # Exit the function early
-
-                        # Process the description as before
-                        processPVPDesc(description,title,timestamp,fields)
+                    if(PVP_Limit == False):
+                        if "title" in embed:
+                            title = embed["title"]
+                        if "timestamp" in embed:
+                            timestamp = embed["timestamp"]
+                            
+                        if "fields" in embed:
+                            fields = embed["fields"]
+                        if "description" in embed:
+                            description = embed["description"]
+                            processPVPDesc(description,title,timestamp,fields)
+                    else:
+                        break
                 
  
 def processPVE(response):
     global PVE_lastID
+    global PVE_Limit
+    
     parsed_json = json.loads(response.content)
-    CurrentID = ''
-
+    currentID = ''
     for json_obj in parsed_json:
-        CurrentID = json_obj['id']
-        if CurrentID is None:
-            print("invalid ID None")
-        if CurrentID == '':
-            print("invalid ID ''")
-            print(parsed_json)
+        currentID = json_obj['id']
         if "embeds" in json_obj:
             for embed in json_obj["embeds"]:
-                if "title" in embed:
-                    title = embed["title"]
-                if "timestamp" in embed:
-                    timestamp = embed["timestamp"]
-                if "description" in embed:
-                    description = embed["description"]
-                    
-                    if ExitIfInDB:
-                        if ExitIfInDBPVE:
-                            return CurrentID  # Exit the function early
-
-                    # Process the description as before
-                    processPVEDesc(description, title, timestamp)
-
-    return CurrentID
+                if(PVE_Limit == False):
+                    if "title" in embed:
+                        title = embed["title"]
+                    if "timestamp" in embed:
+                        timestamp = embed["timestamp"]
+                    if "description" in embed:
+                        description = embed["description"]
+                        processPVEDesc(description,title,timestamp)
+                else:
+                    break
+    return currentID
 
 
 def PVP():
@@ -504,43 +491,42 @@ def PVP():
     global PVP_cookies
     global PVP_headers
     global previous_PVP_lastID
-    global ExitIfInDBPVP
+    global PVP_Limit
 
     print("Generating PVP")
 
     for i in range(0, maxPages):
-        system("title " + f"page: {i+1} / {maxPages}")
-        print("title " + f"page: {i+1} / {maxPages}")
-        if PVP_lastID is None:
-           PVP_params = {'limit': '50'}
-        else:
-            PVP_params = {'before': PVP_lastID, 'limit': '50'}
-        #print(PVP_params)
-        response = requests.get(
-        'https://discord.com/api/v9/channels/' + PVP_CHANNAL_ID + '/messages',
-            params=PVP_params,
-            cookies=PVP_cookies,
-            headers=PVP_headers,
-        )
-        if response.status_code == 403:
-            print("PVP Channel is unavalible.")
-            break
-        else:
-            if response.status_code == 200:
-                if (ExitIfInDBPVP):
-                    print("Record in DB exiting")
-                    break
-
-                # Store the current value of PVP_lastID before processing
-                previous_PVP_lastID = PVP_lastID
-                processPVP(response)
-                # Check if PVP_lastID remains the same after processing
-                if PVP_lastID == previous_PVP_lastID:
-                    print("No change in PVP_lastID. Exiting loop.")
-                    break  # Exit the loop if PVP_lastID doesn't change
+        if(PVP_Limit == False):
+            system("title " + f"page: {i+1} / {maxPages}")
+            print("title " + f"page: {i+1} / {maxPages}")
+            if PVP_lastID == '':
+               PVP_params = {'limit': '50'}
             else:
-                print(f"Received a {response.status_code} response. Handle it accordingly.")
-            time.sleep(2)
+                PVP_params = {'before': PVP_lastID, 'limit': '50'}
+            #print(PVP_params)
+            response = requests.get(
+            'https://discord.com/api/v9/channels/' + PVP_CHANNAL_ID + '/messages',
+                params=PVP_params,
+                cookies=PVP_cookies,
+                headers=PVP_headers,
+            )
+            if response.status_code == 403:
+                print("PVP Channel is unavalible.")
+                break
+            else:
+                if response.status_code == 200:
+                    # Store the current value of PVP_lastID before processing
+                    previous_PVP_lastID = PVP_lastID
+                    processPVP(response)
+                    # Check if PVP_lastID remains the same after processing
+                    if PVP_lastID == previous_PVP_lastID:
+                        print("No change in PVP_lastID. Exiting loop.")
+                        break  # Exit the loop if PVP_lastID doesn't change
+                else:
+                    print(f"Received a {response.status_code} response. Handle it accordingly.")
+                time.sleep(2)
+        else:
+            break
 
 
 def PVE():
@@ -550,50 +536,42 @@ def PVE():
     global PVE_cookies
     global PVE_headers
     global previous_PVE_lastID
-    global ExitIfInDBPVE
-    
+    global PVE_Limit
 
     print("Generating PVE") 
 
 
     for i in range(0, maxPages):
-        system("title " + f"page: {i+1} / {maxPages}")
-        print("title " + f"page: {i+1} / {maxPages}")
-        if PVE_lastID  is None:
-           PVE_params = {'limit': '50'}
-        else:
-            PVE_params = {'before': PVE_lastID, 'limit': '50'}
-        print(PVE_params)
-        response = requests.get(
-            'https://discord.com/api/v9/channels/' + PVE_CHANNAL_ID + '/messages',
-            params=PVE_params,
-            cookies=PVE_cookies,
-            headers=PVE_headers,
-        )
-        if response.status_code == 403:
-            print("PVE Channel is unavalible.")
-            break
-        else:
-            if response.status_code == 200:
-                if (ExitIfInDBPVE):
-                    print("Record in DB exiting")
-                    break
-
-                CurrentID = processPVE(response)
-                
-                if response.content == b'[]\n':
-                    print('End of page')
-                    break
-                    
-
-                if PVE_lastID == CurrentID:
-                    print("No change in PVE_lastID. Exiting loop.")
-                    break
-                else:
-                    PVE_lastID = CurrentID
+        if(PVE_Limit == False):
+            system("title " + f"page: {i+1} / {maxPages}")
+            print("title " + f"page: {i+1} / {maxPages}")
+            if PVE_lastID == '':
+               PVE_params = {'limit': '50'}
             else:
-                print(f"Received a {response.status_code} response. Handle it accordingly.")
-            time.sleep(2)
+                PVE_params = {'before': PVE_lastID, 'limit': '50'}
+            print(PVE_params)
+            response = requests.get(
+                'https://discord.com/api/v9/channels/' + PVE_CHANNAL_ID + '/messages',
+                params=PVE_params,
+                cookies=PVE_cookies,
+                headers=PVE_headers,
+            )
+            if response.status_code == 403:
+                print("PVE Channel is unavalible.")
+                break
+            else:
+                if response.status_code == 200:
+                    CurrentID = processPVE(response)
+                    if PVE_lastID == CurrentID:
+                        print("No change in PVE_lastID. Exiting loop.")
+                        break
+                    else:
+                        PVE_lastID = CurrentID
+                else:
+                    print(f"Received a {response.status_code} response. Handle it accordingly.")
+                time.sleep(2)
+        else:
+            break
 
 if __name__ == "__main__":
     # Create a connection to the database (or create a new one if it doesn't exist)
@@ -644,4 +622,4 @@ if __name__ == "__main__":
     
     conn.close()
     
-    
+    CopyDB()

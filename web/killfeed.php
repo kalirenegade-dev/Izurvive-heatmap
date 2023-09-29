@@ -90,6 +90,7 @@ if (isset($_GET['Killer']) && !empty($_GET['Killer'])) {
                 'name' => $name ,
                 'Killer' => $row['Killer'],
                 'Victim' => $row['Victim'],
+				'Weapon' => $row['Weapon'],
                 'WeaponType' => $row['WeaponType'],
 				'Distance' => $row['Distance'],
 				'HitLocation' => $row['HitLocation'],

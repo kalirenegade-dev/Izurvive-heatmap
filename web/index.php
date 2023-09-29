@@ -1,51 +1,156 @@
-	<!DOCTYPE html>
-	<html>
+<!DOCTYPE html>
+<html>
 
-	<br>
-	<head>
-		<title>Leaflet Custom Tile Map</title>
-		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1.0">
-		<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
-		<script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
-		<link href="assets/css/dayz.css" rel="stylesheet" />
-	</head>
-	<style>
-	.custom-tooltip {
-		#max-width: 100px; /* Adjust the maximum width as needed */
-		min-height: 10px; /* Adjust the minimum height as needed */
-		padding: 1px; /* Adjust padding as needed */
-		background-color: white;
-		border: 1px solid #ccc;
-		border-radius: 5px;
-		font-size: 10px; /* Adjust font size as needed */
+<head>
+    <title>Kalirenegade's Custom Killfeed Heatmap</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+	<script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+
+    <link href="assets/css/dayz.css" rel="stylesheet" />
+    <script src="https://code.jquery.com/jquery-3.6.0.js"></script>
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.js"></script>
+</head>
+<style>
+
+/* Customize the appearance of the Leaflet.Draw controls */
+.leaflet-draw-toolbar {
+  background-color: #fff; /* Set a background color for the toolbar */
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 5px;
+}
+
+/* Style the buttons in the toolbar */
+.leaflet-draw-toolbar a {
+  color: #333; /* Button text color */
+  background-color: #f5f5f5; /* Button background color */
+  border: 1px solid #ccc; /* Button border */
+  padding: 5px 10px;
+  margin: 5px;
+  text-decoration: none;
+  border-radius: 3px;
+}
+
+/* Style the buttons on hover */
+.leaflet-draw-toolbar a:hover {
+  background-color: #ddd;
+}
+
+/* Style the drawn rectangle */
+.leaflet-draw-shape {
+  stroke: #3388ff; /* Outline color for drawn shapes */
+  fill-opacity: 0.2; /* Fill opacity for drawn shapes */
+  fill: #3388ff; /* Fill color for drawn shapes */
+}
+
+/* Style the handles for resizing the rectangle */
+.leaflet-draw-shape:hover .leaflet-draw-handle {
+  background-color: #3388ff; /* Handle background color on hover */
+}
+
+/* Style the marker icon for rectangle center */
+.leaflet-draw-marker-icon {
+  background-color: #3388ff; /* Marker background color */
+  border: 1px solid #fff; /* Marker border */
+}
+
+/* Style the delete button for drawn features */
+.leaflet-draw-edit-remove {
+  background-color: #ff6666; /* Delete button background color */
+  color: #fff; /* Delete button text color */
+  border: 1px solid #cc0000; /* Delete button border color */
+  border-radius: 3px;
+  padding: 3px 6px;
+  text-align: center;
+  cursor: pointer;
+}
+
+/* Style the delete button on hover */
+.leaflet-draw-edit-remove:hover {
+  background-color: #cc0000;
+}
+
+/* Style the save button for drawn features */
+.leaflet-draw-edit-save {
+  background-color: #66cc66; /* Save button background color */
+  color: #fff; /* Save button text color */
+  border: 1px solid #339933; /* Save button border color */
+  border-radius: 3px;
+  padding: 3px 6px;
+  text-align: center;
+  cursor: pointer;
+}
+
+/* Style the save button on hover */
+.leaflet-draw-edit-save:hover {
+  background-color: #339933;
+}
+</style>
+<style>
+    /* Style the autocomplete container */
+    .ui-autocomplete {
+        max-height: 200px;
+        overflow-y: auto;
+        position: absolute;
+        background-color: #fff;
+        border: 1px solid #ccc;
+    }
+	.ui-helper-hidden-accessible {
+		display: none !important;
 	}
+    /* Style individual autocomplete items */
+    .ui-autocomplete li {
+        list-style: none;
+        padding: 5px;
+        cursor: pointer;
+    }
 
-	/* Red marker for PVP */
-	.marker-icon-red {
-		width: 13px;
-		height: 13px;
-		background-color: red;
-		border-radius: 50%;
-	}
+    /* Highlight the selected item */
+    .ui-autocomplete li.ui-state-focus {
+        background-color: #007bff;
+        color: #fff;
+    }
 
-	/* Green marker for PVE */
-	.marker-icon-green {
-		width: 13px;
-		height: 13px;
-		background-color: green;
-		border-radius: 50%;
-	}
+    .custom-tooltip {
+        min-width: 100px; /* Adjust the minimum width as needed */
+        min-height: 10px; /* Adjust the minimum height as needed */
+        padding: 1px; /* Adjust padding as needed */
+        background-color: white;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 10px; /* Adjust font size as needed */
+    }
 
+    /* Red marker for PVP */
+    .marker-icon-red {
+        width: 13px;
+        height: 13px;
+        background-color: red;
+        border-radius: 50%;
+    }
 
-	</style>
+    /* Green marker for PVE */
+    .marker-icon-green {
+        width: 13px;
+        height: 13px;
+        background-color: green;
+        border-radius: 50%;
+    }
+
+</style>
+
 <body>
     <center>
         <div id="search-bar">
-            <!-- GamerTag Section -->
+            <!-- GamerTag and Tooltip Toggle Section -->
             <div class="search-section">
                 <label for="GamerTag">GamerTag:</label>
-                <input type="text" id="GamerTag" placeholder="Enter GamerTag" />
+                <input type="text" id="GamerTag" name="q" placeholder="Enter GamerTag" />
+                <label for="tooltip-checkbox">Show Tooltip</label>
+                <input type="checkbox" id="tooltip-checkbox" checked>
             </div>
 
             <!-- Map Type Section -->
@@ -66,16 +171,13 @@
 
                 <input type="radio" id="Death" name="KillType" value="death">
                 <label for="Death">Death</label>
-				
-				
             </div>
 
-            <!-- Search Button -->
+            <!-- Record Limit Section -->
             <div class="search-section">
-                 <label for="RecordLimit">Record Limit:</label>
-				<input type="number" id="RecordLimit" placeholder="Enter Record Limit" min="1" value="100" />
-
-<button id="search-button">Search</button>
+                <label for="RecordLimit">Record Limit:</label>
+                <input type="number" id="RecordLimit" placeholder="Enter Record Limit" min="1" value="100" />
+                <button id="search-button">Search</button>
             </div>
         </div>
     </center>
@@ -84,9 +186,38 @@
         <center>
             <div id="map"></div>
             <div id="coords">x:0, y:0</div>
+			<div id="selected-coordinates"></div>
+
         </center>
     </div>
-		<script type="module">
+    <script type="module">
+        $(document).ready(function () {
+            $("#GamerTag").autocomplete({
+                source: 'Users.php',
+                paramName: 'q'
+				
+            });
+        });
+
+		// Add an event listener to the "Show Tooltips" checkbox
+		const tooltipCheckbox = document.getElementById('tooltip-checkbox');
+		tooltipCheckbox.addEventListener('change', function () {
+		  const isChecked = tooltipCheckbox.checked;
+
+		  // Check if the GeoJSON layer (geojsonLayer) is defined
+		  if (geojsonLayer) {
+			geojsonLayer.eachLayer(function (layer) {
+			  if (isChecked) {
+				layer.openTooltip();
+			  } else {
+				layer.closeTooltip();
+			  }
+			});
+		  }
+		});
+
+
+
 			let marker = [];
 			import {
 				Point,
@@ -217,13 +348,94 @@
 				const dayzPoint = transformation.izurviveCoordinateToDayzPoint(izurviveCoordinate)	
 				coordsDiv.innerHTML = "x:" + dayzPoint.x.toFixed(2) + ", y:" +dayzPoint.y.toFixed(2) 
 			});
-
-
 			
+			// Initialize the drawing control
+var drawControl = new L.Control.Draw({
+    draw: {
+        rectangle: {
+            shapeOptions: {
+                color: 'blue', // Set the color for the rectangle
+                fillOpacity: 0.2, // Set the fill opacity
+            },
+        },
+        marker: false,
+        circle: false,
+        circlemarker: false,
+        polyline: false,
+        polygon: false
+    }
+});
+mymap.addControl(drawControl);
 
+// Create a function to display the Izurvive point (x, y) coordinates of the selected rectangle
+function displaySelectedRectangleCoordinates(layer) {
+    const bounds = layer.getBounds();
+    const topLeft = bounds.getNorthWest();
+    const bottomRight = bounds.getSouthEast();
 
+    // Check if both coordinates are defined
+    if (topLeft && bottomRight) {
+        // Convert Leaflet coordinates to Izurvive coordinates
+        const izurviveTopLeft = convertToIzurviveCoordinates(topLeft);
+        const izurviveBottomRight = convertToIzurviveCoordinates(bottomRight);
 		
+		const izurviveCoordinateTopLeft = new Coordinate(topLeft.lat, topLeft.lng);
+		const izurviveCoordinateBottomRight = new Coordinate(bottomRight.lat, bottomRight.lng);
+		const transformation = IzurviveTransformation.livonia();
+		const dayzPointTopLeft = transformation.izurviveCoordinateToDayzPoint(izurviveCoordinateTopLeft)	;
+		const dayzPointBottomRight = transformation.izurviveCoordinateToDayzPoint(izurviveCoordinateBottomRight);	
 
+        // Format the coordinates as "x:10155.98, y:10900.00"
+        //const formattedCoordinates = "x:" + dayzPointTopLeft.x.toFixed(2) + ", y:" + dayzPointTopLeft.y.toFixed(2)  + "<br>" +
+        //                           "x:" + dayzPointBottomRight.x.toFixed(2) + ", y:" + dayzPointBottomRight.y.toFixed(2);
+		// Create a JSON object with the specified structure
+		const formattedCoordinates = {
+			topLeft: {
+				x: dayzPointTopLeft.x.toFixed(2),
+				y: dayzPointTopLeft.y.toFixed(2),
+			},
+			bottomRight: {
+				x: dayzPointBottomRight.x.toFixed(2),
+				y: dayzPointBottomRight.y.toFixed(2),
+			},
+		};
+
+        // Display the coordinates in the selected-coordinates div
+       //document.getElementById('selected-coordinates').innerHTML = formattedCoordinates;
+    } else {
+        // Handle the case where coordinates are undefined
+        document.getElementById('selected-coordinates').innerHTML = "Coordinates are undefined";
+    }
+}
+
+
+let drawnRectangle = null;
+
+// Add an event listener for rectangle creation
+mymap.on('draw:created', function (e) {
+    let layer = e.layer;
+
+    // Remove the previously drawn rectangle, if any
+    if (drawnRectangle) {
+        mymap.removeLayer(drawnRectangle);
+    }
+
+    // Add the newly drawn rectangle to the map
+    mymap.addLayer(layer);
+
+    // Display the Izurvive point (x, y) coordinates of the selected rectangle
+    displaySelectedRectangleCoordinates(layer);
+
+    // Store the newly drawn rectangle
+    drawnRectangle = layer;
+});
+
+// Function to convert Leaflet coordinates to Izurvive coordinates
+function convertToIzurviveCoordinates(leafletCoordinate) {
+    const transformation = IzurviveTransformation.livonia();
+    const izurviveCoordinate = transformation.dayzPointToIzurviveCoordinate(new Point(leafletCoordinate.lat, leafletCoordinate.lng));
+    return izurviveCoordinate;
+}
 	function DisplayJSON_PVP(geojsonData){
 		geojsonLayer.clearLayers();
 		// Function to convert DayZ Point coordinates to Izurvive coordinates
@@ -233,8 +445,8 @@
 
 		// Iterate through GeoJSON features and convert coordinates
 		geojsonData.features.forEach(function (feature) {
-			var dayzPointCoordinates = feature.geometry.coordinates;
-			var izurviveCoordinate = convertToIzurviveCoordinates({ x: dayzPointCoordinates[0], y: dayzPointCoordinates[1] });
+			const dayzPointCoordinates = feature.geometry.coordinates;
+			const izurviveCoordinate = convertToIzurviveCoordinates({ x: dayzPointCoordinates[0], y: dayzPointCoordinates[1] });
 			
 			// Update the GeoJSON feature's coordinates with Izurvive coordinates
 			feature.geometry.coordinates = [izurviveCoordinate.lng, izurviveCoordinate.lat];
@@ -253,6 +465,7 @@
 				  var popupContent = '<strong>' + feature.properties.name + '</strong><br>' +
 					'Killer: ' + feature.properties.Killer + '<br>' +
 					'Victom: ' + feature.properties.Victim + '<br>' +
+					'Weapon: ' + feature.properties.Weapon + '<br>' +
 					'WeaponType: ' + feature.properties.WeaponType + '<br>' +
 					'Distance: ' + feature.properties.Distance + '<br>' +
 					'HitLocation: ' + feature.properties.HitLocation + '<br>' +
@@ -262,16 +475,30 @@
 					'TimeAlive: ' + feature.properties.TimeAlive + '<br>' +
 					'Timestamp: ' + feature.properties.Timestamp + '<br>' +
 					'InGameTime: ' + feature.properties.InGameTime;
-					
+						
 
+				  
+				  
 				marker.bindPopup(popupContent);
-
-				marker.bindTooltip(feature.properties.name, {
-					permanent: true,
-					direction: 'top',
-					offset: [2	, -3],
-					className: 'custom-tooltip',
-				});
+				const tooltipCheckbox = document.getElementById('tooltip-checkbox');
+				const isChecked = tooltipCheckbox.checked;
+				if (isChecked) {
+					marker.bindTooltip(feature.properties.name, {
+						permanent: true,
+						direction: 'top',
+						offset: [2	, -3],
+						className: 'custom-tooltip',
+					});
+					
+				}else{
+					marker.bindTooltip(feature.properties.name, {
+						permanent: false,
+						direction: 'top',
+						offset: [2	, -3],
+						className: 'custom-tooltip',
+					});
+				}
+				
 
 				return marker;
 			},
@@ -280,7 +507,8 @@
 
 			// Add the GeoJSON layer to the map
 			geojsonLayer.addTo(mymap);
-	}
+			
+		}
 	
 	let geojsonLayer = L.geoJSON().addTo(mymap);
 	
@@ -320,13 +548,24 @@
 					'InGameTime: ' + feature.properties.InGameTime;
 					
 				marker.bindPopup(popupContent);
+				const tooltipCheckbox = document.getElementById('tooltip-checkbox');
+				const isChecked = tooltipCheckbox.checked;
+				if (isChecked) {
+					marker.bindTooltip(feature.properties.name, {
+						permanent: true,
+						direction: 'top',
+						offset: [2	, -3],
+						className: 'custom-tooltip',
+					});
+				}else{
+					marker.bindTooltip(feature.properties.name, {
+						permanent: false,
+						direction: 'top',
+						offset: [2	, -3],
+						className: 'custom-tooltip',
+					});
+				}
 
-				marker.bindTooltip(feature.properties.name, {
-					permanent: true,
-					direction: 'top',
-					offset: [2	, -3],
-					className: 'custom-tooltip',
-				});
 
 				return marker;
 			},
@@ -352,6 +591,8 @@ function fetchData(url, type) {
 				console.log(data);
                 DisplayJSON_PVE(data);
             }
+			  // Update tooltips visibility after adding new data
+            updateTooltipsVisibility();
         })
         .catch((error) => {
             console.error('Error fetching data:', error);
@@ -382,8 +623,6 @@ document.getElementById('search-button').addEventListener('click', function () {
 });
 
 
-		
-
 	</script>
 
 
@@ -393,9 +632,6 @@ document.getElementById('search-button').addEventListener('click', function () {
 
 	</html>
 
-
-
-		</script>
 	</body>
 
 	</html>
