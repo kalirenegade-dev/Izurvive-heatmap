@@ -14,11 +14,19 @@
     <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.js"></script>
 </head>
 <style>
-
+  /* Define CSS styles for the custom div icons */
+        .custom-div-icon {
+			color: black;
+             text-shadow: -.8px -.8px 0 white, .8px -.8px 0 white, -.8px .8px 0 white, .8px .8px 0 white;
+			 padding: 5px 10px;
+			border-radius: 5px;
+			font-weight: bold;
+            font-size: 14px;
+            }
 /* Customize the appearance of the Leaflet.Draw controls */
 .leaflet-draw-toolbar {
   background-color: #fff; /* Set a background color for the toolbar */
-  border: 1px solid #ccc;
+  border: .8px solid #ccc;
   border-radius: 4px;
   padding: 5px;
 }
@@ -27,7 +35,7 @@
 .leaflet-draw-toolbar a {
   color: #333; /* Button text color */
   background-color: #f5f5f5; /* Button background color */
-  border: 1px solid #ccc; /* Button border */
+  border: .8px solid #ccc; /* Button border */
   padding: 5px 10px;
   margin: 5px;
   text-decoration: none;
@@ -54,14 +62,14 @@
 /* Style the marker icon for rectangle center */
 .leaflet-draw-marker-icon {
   background-color: #3388ff; /* Marker background color */
-  border: 1px solid #fff; /* Marker border */
+  border: .8px solid #fff; /* Marker border */
 }
 
 /* Style the delete button for drawn features */
 .leaflet-draw-edit-remove {
   background-color: #ff6666; /* Delete button background color */
   color: #fff; /* Delete button text color */
-  border: 1px solid #cc0000; /* Delete button border color */
+  border: .8px solid #cc0000; /* Delete button border color */
   border-radius: 3px;
   padding: 3px 6px;
   text-align: center;
@@ -77,7 +85,7 @@
 .leaflet-draw-edit-save {
   background-color: #66cc66; /* Save button background color */
   color: #fff; /* Save button text color */
-  border: 1px solid #339933; /* Save button border color */
+  border: .8px solid #339933; /* Save button border color */
   border-radius: 3px;
   padding: 3px 6px;
   text-align: center;
@@ -96,7 +104,7 @@
         overflow-y: auto;
         position: absolute;
         background-color: #fff;
-        border: 1px solid #ccc;
+        border: .8px solid #ccc;
     }
 	.ui-helper-hidden-accessible {
 		display: none !important;
@@ -117,9 +125,9 @@
     .custom-tooltip {
         min-width: 100px; /* Adjust the minimum width as needed */
         min-height: 10px; /* Adjust the minimum height as needed */
-        padding: 1px; /* Adjust padding as needed */
+        padding: .8px; /* Adjust padding as needed */
         background-color: white;
-        border: 1px solid #ccc;
+        border: .8px solid #ccc;
         border-radius: 5px;
         font-size: 10px; /* Adjust font size as needed */
     }
@@ -348,24 +356,147 @@
 				const dayzPoint = transformation.izurviveCoordinateToDayzPoint(izurviveCoordinate)	
 				coordsDiv.innerHTML = "x:" + dayzPoint.x.toFixed(2) + ", y:" +dayzPoint.y.toFixed(2) 
 			});
-			
-			// Initialize the drawing control
-var drawControl = new L.Control.Draw({
-    draw: {
-        rectangle: {
-            shapeOptions: {
-                color: 'blue', // Set the color for the rectangle
-                fillOpacity: 0.2, // Set the fill opacity
+AddremoveControl();
+AddDrawControl();
+function AddremoveControl() {
+    // Create a feature group to handle the drawn items
+    var drawnItems = new L.FeatureGroup();
+    mymap.addLayer(drawnItems);
+
+    // Initialize the drawing control
+    var drawControl = new L.Control.Draw({
+        draw: {
+            rectangle: {
+                shapeOptions: {
+                    color: 'blue', // Set the color for the rectangle
+                    fillOpacity: 0.2, // Set the fill opacity
+                },
             },
+            marker: false,
+            circle: false,
+            circlemarker: false,
+            polyline: false,
+            polygon: false,
         },
-        marker: false,
-        circle: false,
-        circlemarker: false,
-        polyline: false,
-        polygon: false
+        edit: {
+            featureGroup: drawnItems, // Add a feature group to handle the drawn items
+            remove: true, // Enable the remove functionality
+        },
+    });
+
+    // Create a custom "Remove" button and add it to the drawing control
+    let removeButton = L.DomUtil.create('button', 'leaflet-draw-edit-remove leaflet-control');
+    removeButton.innerHTML = 'Remove';
+    removeButton.title = 'Remove drawn items';
+    removeButton.style.margin = '5px';
+
+    // Add a click event listener to the "Remove" button
+    removeButton.addEventListener('click', function () {
+        if (drawnItems.getLayers().length > 0) {
+            drawnItems.clearLayers(); // Clear the drawn items from the feature group
+            drawnRectangle = null; // Clear the drawn rectangle reference
+        } else {
+            alert('No drawn items to remove.');
+        }
+    });
+
+    // Add the "Remove" button to the drawing control
+    drawControl.onAdd = function (map) {
+        var container = L.DomUtil.create('div', 'leaflet-draw leaflet-control');
+        container.appendChild(removeButton);
+        return container;
+    };
+
+    // Add the drawing control to the map, but initially, keep it disabled
+    drawControl.addTo(mymap);
+}
+// Define a variable to store the drawn rectangle
+var drawnRectangle = null;
+
+function AddDrawControl() {
+    // Create a feature group to handle the drawn items
+    var drawnItems = new L.FeatureGroup();
+    mymap.addLayer(drawnItems);
+
+    // Initialize the drawing control
+    var drawControl = new L.Control.Draw({
+        draw: {
+            rectangle: {
+                shapeOptions: {
+                    color: 'blue', // Set the color for the rectangle
+                    fillOpacity: 0.2, // Set the fill opacity
+                },
+            },
+            marker: false,
+            circle: false,
+            circlemarker: false,
+            polyline: false,
+            polygon: false,
+        },
+        
+    });
+
+    // Add the drawing control to the map
+    drawControl.addTo(mymap);
+
+    // Event handler for when a shape is drawn and added to the feature group
+    mymap.on('draw:created', function (e) {
+        var layer = e.layer;
+
+        // Remove the previously drawn rectangle, if any
+        if (drawnRectangle) {
+            mymap.removeLayer(drawnRectangle);
+        }
+
+        // Add the newly drawn rectangle to the map
+        mymap.addLayer(layer);
+
+        // Display the Izurvive point (x, y) coordinates of the selected rectangle
+        displaySelectedRectangleCoordinates(layer);
+
+        // Store the newly drawn rectangle
+        drawnRectangle = layer;
+    });
+}
+
+function GetRecSelectionCoords(){
+	 if (drawnRectangle) {
+        // Get the bounds of the drawn rectangle
+        const bounds = drawnRectangle.getBounds();
+        const topLeft = bounds.getNorthWest();
+        const bottomRight = bounds.getSouthEast();
+
+        // Check if both coordinates are defined
+        if (topLeft && bottomRight) {
+            // Convert Leaflet coordinates to Izurvive coordinates if needed
+            const izurviveTopLeft = convertToIzurviveCoordinates(topLeft);
+            const izurviveBottomRight = convertToIzurviveCoordinates(bottomRight);
+
+            // Display the coordinates as an alert or any other desired action
+                       // Create a JavaScript object with the coordinates
+            const coordinates = {
+                topLeft: {
+                    lat: izurviveTopLeft.lat,
+                    lng: izurviveTopLeft.lng,
+                },
+                bottomRight: {
+                    lat: izurviveBottomRight.lat,
+                    lng: izurviveBottomRight.lng,
+                },
+            };
+
+            // Convert the JavaScript object to JSON format
+            const jsonCoordinates = JSON.stringify(coordinates);
+			return jsonCoordinates;
+        } else {
+            // Handle the case where coordinates are undefined
+            return null;
+        }
+    } else {
+        // Handle the case where no rectangle is drawn
+        return null;
     }
-});
-mymap.addControl(drawControl);
+};
 
 // Create a function to display the Izurvive point (x, y) coordinates of the selected rectangle
 function displaySelectedRectangleCoordinates(layer) {
@@ -409,26 +540,110 @@ function displaySelectedRectangleCoordinates(layer) {
 }
 
 
-let drawnRectangle = null;
 
-// Add an event listener for rectangle creation
-mymap.on('draw:created', function (e) {
-    let layer = e.layer;
+AddCityNamesRUFirst();
+function AddCityNames(){
+	
+	// Load the JSON data from the file
+	fetch('citynames.json')
+		.then(function(response) {
+			if (!response.ok) {
+				throw new Error('Network response was not ok');
+			}
+			return response.json();
+		})
+		.then(function(jsonData) {
+			// Convert the JSON data into a GeoJSON FeatureCollection
+			var geojsonData = {
+				type: "FeatureCollection",
+				features: jsonData.map(function(item) {
+					return {
+						type: "Feature",
+						geometry: {
+							type: "Point",
+							coordinates: [item.lng, item.lat] // Swap lng and lat if needed
+						},
+						properties: {
+							nameEN: item.nameEN
+						}
+					};
+				})
+			};
 
-    // Remove the previously drawn rectangle, if any
-    if (drawnRectangle) {
-        mymap.removeLayer(drawnRectangle);
-    }
+			// Create custom div icons for names
+			L.geoJSON(geojsonData, {
+				onEachFeature: function (feature, layer) {
+					// Check if the "nameEN" property exists
+					if (feature.properties && feature.properties.nameEN) {
+						var customIcon = L.divIcon({
+							className: 'custom-div-icon',
+							html: feature.properties.nameEN
+						});
 
-    // Add the newly drawn rectangle to the map
-    mymap.addLayer(layer);
+						// Create a marker with the custom icon
+						L.marker([feature.geometry.coordinates[1], feature.geometry.coordinates[0]], {
+							icon: customIcon
+						}).addTo(mymap);
+					}
+				}
+			});
+		})
+		.catch(function(error) {
+			console.error('There was a problem with the fetch operation:', error);
+		});
+}
 
-    // Display the Izurvive point (x, y) coordinates of the selected rectangle
-    displaySelectedRectangleCoordinates(layer);
+function AddCityNamesRUFirst() {
+    // Load the JSON data from the file
+    fetch('citynames.json')
+        .then(function(response) {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(function(jsonData) {
+            // Convert the JSON data into a GeoJSON FeatureCollection
+            var geojsonData = {
+                type: "FeatureCollection",
+                features: jsonData.map(function(item) {
+                    var cityName = item.nameRU || item.nameEN; // Use nameRU if available, otherwise use nameEN
 
-    // Store the newly drawn rectangle
-    drawnRectangle = layer;
-});
+                    return {
+                        type: "Feature",
+                        geometry: {
+                            type: "Point",
+                            coordinates: [item.lng, item.lat] // Swap lng and lat if needed
+                        },
+                        properties: {
+                            name: cityName
+                        }
+                    };
+                })
+            };
+
+            // Create custom div icons for names
+            L.geoJSON(geojsonData, {
+                onEachFeature: function (feature, layer) {
+                    // Check if the "name" property exists
+                    if (feature.properties && feature.properties.name) {
+                        var customIcon = L.divIcon({
+                            className: 'custom-div-icon',
+                            html: feature.properties.name
+                        });
+
+                        // Create a marker with the custom icon
+                        L.marker([feature.geometry.coordinates[1], feature.geometry.coordinates[0]], {
+                            icon: customIcon
+                        }).addTo(mymap);
+                    }
+                }
+            });
+        })
+        .catch(function(error) {
+            console.error('There was a problem with the fetch operation:', error);
+        });
+}
 
 // Function to convert Leaflet coordinates to Izurvive coordinates
 function convertToIzurviveCoordinates(leafletCoordinate) {
@@ -603,6 +818,9 @@ function fetchData(url, type) {
 
 // Add an event listener to the "Search" button
 document.getElementById('search-button').addEventListener('click', function () {
+const JsonCoords = GetRecSelectionCoords();
+console.log(JsonCoords);
+
     const GamerTag = document.getElementById("GamerTag").value;
     const MapTypeRadio = document.querySelector('input[name="MapType"]:checked');
     const KillTypeRadio = document.querySelector('input[name="KillType"]:checked');
@@ -624,7 +842,6 @@ document.getElementById('search-button').addEventListener('click', function () {
 
 
 	</script>
-
 
 		
 		
